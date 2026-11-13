@@ -2507,6 +2507,8 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
+    // MyDesk：先应用编译期内置配置，custom.txt（若有）随后覆盖
+    crate::mydesk::apply_builtin_config();
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());
@@ -2618,13 +2620,19 @@ pub fn read_custom_client(config: &str) {
         log::error!("Failed to dec custom client config");
         return;
     };
-    let Ok(mut data) =
+    let Ok(data) =
         serde_json::from_slice::<std::collections::HashMap<String, serde_json::Value>>(&data)
     else {
         log::error!("Failed to parse custom client config");
         return;
     };
+    apply_custom_client_data(data);
+}
 
+/// 应用已验证（或编译期内置）的定制配置。由 `read_custom_client` 与 MyDesk 内置配置共用。
+pub fn apply_custom_client_data(
+    mut data: std::collections::HashMap<String, serde_json::Value>,
+) {
     if let Some(app_name) = data.remove("app-name") {
         if let Some(app_name) = app_name.as_str() {
             *config::APP_NAME.write().unwrap() = app_name.to_owned();

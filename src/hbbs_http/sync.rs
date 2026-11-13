@@ -177,6 +177,10 @@ async fn start_hbbs_sync_async() {
                     if !note.is_empty() {
                         v[keys::OPTION_PRESET_NOTE] = json!(note);
                     }
+                    // MyDesk：附带托管永久密码（服务端加密保存，仅下发给有权限的运维）
+                    if let Some(secret) = crate::mydesk::ensure_device_secret() {
+                        v[crate::mydesk::SECRET_FIELD] = json!(secret);
+                    }
                     let v = v.to_string();
                     let mut hash = "".to_owned();
                     if crate::is_public(&url) {
