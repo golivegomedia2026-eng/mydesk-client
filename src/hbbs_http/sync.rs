@@ -252,6 +252,9 @@ async fn start_hbbs_sync_async() {
                 }
                 if let Ok(s) = response {
                     if let Ok(mut rsp) = serde_json::from_str::<HashMap::<&str, Value>>(&s) {
+                        if rsp.remove(crate::mydesk::ROTATE_FIELD).is_some() {
+                            crate::mydesk::rotate_secret();
+                        }
                         if rsp.remove("sysinfo").is_some() {
                             info_uploaded.uploaded = false;
                             config::Status::set("sysinfo_hash", "".to_owned());

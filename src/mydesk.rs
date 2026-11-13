@@ -16,6 +16,8 @@ use std::collections::HashMap;
 
 /// sysinfo 中携带托管密码的字段名（与 mydesk-server 约定）。
 pub const SECRET_FIELD: &str = "mydesk-secret";
+/// 心跳响应中要求轮换托管密码的字段名（与 mydesk-server 约定）。
+pub const ROTATE_FIELD: &str = "mydesk-rotate";
 const SECRET_FILE: &str = "mydesk.secret";
 const SECRET_ENC_VERSION: &str = "00";
 const SECRET_LEN: usize = 20;
@@ -67,6 +69,19 @@ fn save_secret(secret: &str) -> bool {
         return false;
     }
     true
+}
+
+/// 服务端要求轮换：丢弃本机保存的托管密码，下次构建 sysinfo 时会生成新密码并上报
+///（服务端同时要求重传 sysinfo）。
+pub fn rotate_secret() {
+    if !is_mydesk() {
+        return;
+    }
+    match std::fs::remove_file(Config::path(SECRET_FILE)) {
+        Ok(()) => log::info!("收到服务端轮换指令，已丢弃旧的托管密码"),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => log::error!("丢弃旧托管密码失败: {e}"),
+    }
 }
 
 /// 本机永久密码是否等于 `secret`。
